@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Cluedo de Integraciones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Special+Elite&display=swap">
+<style>
+/* Layout: un expediente policial en una columna; cinta de escena del crimen como barra de pasos; las cartas de sospechosos se dan la vuelta. */
+:root{
+  --bg:#E7EBE9; --surface:#FBFCFB; --surface-2:#F1F4F2; --ink:#15201E; --muted:#56635F; --line:#C5CECA;
+  --tape:#E9B400; --tape-ink:#15201E; --stamp:#B42318; --ok:#23704A; --link:#1F5C8F;
+  --f-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --f-type:"Special Elite","Courier New",Courier,monospace;
+  --shadow:0 1px 0 rgba(21,32,30,.06),0 6px 18px -10px rgba(21,32,30,.35);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0F1514; --surface:#18201F; --surface-2:#1E2826; --ink:#E5ECE9; --muted:#97A5A0; --line:#2E3A37;
+  --tape:#F2C230; --tape-ink:#141A19; --stamp:#F0786A; --ok:#5CC08A; --link:#7DB7E8;
+  --shadow:0 1px 0 rgba(0,0,0,.3),0 8px 20px -12px rgba(0,0,0,.8); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1514; --surface:#18201F; --surface-2:#1E2826; --ink:#E5ECE9; --muted:#97A5A0; --line:#2E3A37;
+  --tape:#F2C230; --tape-ink:#141A19; --stamp:#F0786A; --ok:#5CC08A; --link:#7DB7E8;
+  --shadow:0 1px 0 rgba(0,0,0,.3),0 8px 20px -12px rgba(0,0,0,.8); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{overflow-x:clip;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55}
+.wrap{max-width:960px;margin:0 auto;padding-inline:16px;padding-block:0 64px}
+h1,h2,h3{font-family:var(--f-display);font-weight:900;letter-spacing:.01em;line-height:1.02;text-wrap:balance;margin:0;text-transform:uppercase}
+h1{font-size:clamp(2.6rem,9vw,4.6rem)}
+h2{font-size:clamp(1.9rem,6vw,2.8rem)}
+h3{font-size:1.35rem;font-weight:700}
+p{margin:0;max-width:65ch}
+.eyebrow{font-family:var(--f-type);font-size:.85rem;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.mono{font-family:var(--f-mono)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--link);outline-offset:2px}
+
+/* Cinta de pasos */
+.tape{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--tape);color:var(--tape-ink);
+  box-shadow:0 2px 0 rgba(0,0,0,.15);transform:rotate(-.4deg);margin-inline:-6px}
+.tape nav{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;scrollbar-width:none;padding-inline:16px}
+.tape nav::-webkit-scrollbar{display:none}
+.tape button{flex:0 0 auto;background:none;border:0;padding:12px 12px;font-family:var(--f-display);font-weight:700;font-size:1.05rem;
+  text-transform:uppercase;letter-spacing:.04em;opacity:.55;white-space:nowrap;border-bottom:4px solid transparent}
+.tape button[aria-current="step"]{opacity:1;border-bottom-color:var(--tape-ink)}
+.tape button:hover{opacity:1}
+.tape button span{font-family:var(--f-type);font-weight:400;margin-right:6px}
+
+section.step{display:grid;gap:24px;padding-block:32px 0}
+.lead{font-size:1.1rem}
+.muted{color:var(--muted)}
+
+/* Intro */
+.clock{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.clock .time{font-family:var(--f-display);font-weight:900;font-size:clamp(3.5rem,14vw,6.5rem);line-height:.9;font-variant-numeric:tabular-nums}
+.clock .day{font-family:var(--f-type);font-size:1.1rem;color:var(--muted)}
+.story{display:grid;gap:12px}
+.mail{background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);font-size:.95rem}
+.mail header{display:grid;gap:2px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.mail header b{font-weight:600}
+.mail .subj{font-weight:600;font-size:1.02rem}
+.mail .subj em{font-style:normal;color:var(--stamp)}
+.mail .body{padding:14px 16px;display:grid;gap:10px}
+.mail.auto{border-style:dashed;box-shadow:none;background:transparent}
+.mail.auto header{background:transparent}
+.flag{display:inline-block;font-family:var(--f-type);color:var(--stamp);border:2px solid var(--stamp);padding:1px 8px;transform:rotate(-3deg);font-size:.85rem;letter-spacing:.06em}
+.mails{display:grid;gap:12px}
+.autos{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+
+.next{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-top:8px}
+.btn{border:2px solid var(--ink);background:var(--ink);color:var(--bg);padding:12px 20px;font-family:var(--f-display);font-weight:700;
+  font-size:1.15rem;text-transform:uppercase;letter-spacing:.04em}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* Cartas */
+.cards{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.card{perspective:1200px;border:0;background:none;padding:0;text-align:left;min-width:0}
+.card-inner{display:grid;transition:transform .6s cubic-bezier(.2,.7,.2,1);transform-style:preserve-3d;height:100%}
+.card[aria-pressed="true"] .card-inner{transform:rotateY(180deg)}
+.face{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow);
+  padding:16px;display:flex;flex-direction:column;gap:10px;min-height:210px}
+.face.front{align-items:flex-start;justify-content:space-between}
+.face.front .ico{width:56px;height:56px;color:var(--ink)}
+.face.front .num{font-family:var(--f-type);color:var(--muted);font-size:.85rem}
+.face.front .nm{font-family:var(--f-display);font-weight:700;font-size:1.45rem;text-transform:uppercase;line-height:1.05}
+.face.front .hint{font-size:.8rem;color:var(--muted)}
+.face.back{transform:rotateY(180deg);background:var(--surface-2);font-size:.9rem;gap:8px}
+.photo{display:flex;align-items:center;gap:10px;padding-bottom:8px;border-bottom:1px dashed var(--line)}
+.photo .ph{flex:0 0 auto;width:52px;height:52px;display:grid;place-items:center;background:var(--tape);color:var(--tape-ink)}
+.photo .ph svg{width:32px;height:32px}
+.photo .nm{font-family:var(--f-display);font-weight:700;font-size:1.15rem;text-transform:uppercase;line-height:1.05}
+.photo .tech{font-family:var(--f-mono);font-size:.72rem;color:var(--muted)}
+.face.back dl{margin:0;display:grid;gap:6px}
+.face.back dt{font-family:var(--f-type);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.face.back dd{margin:0}
+svg.i{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+/* Botoneras */
+.pad{display:grid;gap:10px;grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:720px){.pad{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pad button{border:2px solid var(--ink);background:var(--surface);padding:14px 12px;text-align:left;display:grid;gap:4px;min-width:0}
+.pad button .k{font-family:var(--f-type);font-size:.8rem;color:var(--muted)}
+.pad button .t{font-family:var(--f-display);font-weight:700;font-size:1.15rem;text-transform:uppercase;line-height:1.1}
+.pad button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.pad button[aria-pressed="true"] .k{color:var(--bg);opacity:.75}
+
+.panel{background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);padding:18px;display:grid;gap:14px;min-width:0}
+.log{font-family:var(--f-mono);font-size:.82rem;background:var(--surface-2);border-left:4px solid var(--stamp);padding:10px 12px;overflow-x:auto;white-space:pre-wrap;word-break:break-word}
+.casebar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border:1px dashed var(--line);font-size:.92rem}
+.casebar b{font-family:var(--f-display);text-transform:uppercase;font-size:1.1rem;letter-spacing:.02em}
+
+.task{display:grid;gap:10px;padding:18px;border:2px solid var(--ink);background:var(--surface)}
+.task .eyebrow{color:var(--ink)}
+.chiplist{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface-2);padding:4px 10px;font-size:.85rem;line-height:1.3}
+.chip svg{width:16px;height:16px;flex:0 0 auto}
+.chip.big{font-size:.95rem;padding:6px 12px;border-color:var(--ink);background:var(--surface)}
+
+/* Flujo */
+.flowbox{overflow-x:auto}
+.flow{display:grid;grid-template-columns:minmax(0,1fr) 120px minmax(0,1fr) 120px minmax(0,1fr);align-items:stretch;gap:0;min-width:0}
+.node{border:2px solid var(--ink);background:var(--surface);padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.node .hd{display:flex;align-items:center;gap:8px}
+.node .hd svg{width:30px;height:30px;flex:0 0 auto}
+.node .hd b{font-family:var(--f-display);font-size:1.2rem;text-transform:uppercase;line-height:1.05}
+.link{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:8px;padding:10px 6px;min-width:0}
+.arrow{width:100%;height:24px;color:var(--ink)}
+.arrow.v{display:none}
+.link .chip{font-size:.78rem;padding:3px 8px;text-align:center}
+.flow .chiplist{gap:6px}
+.flow .chip{background:var(--tape);color:var(--tape-ink);border-color:transparent}
+.flow.empty .chiplist{display:none}
+.linknote{font-size:.75rem;color:var(--muted);text-align:center;max-width:14ch}
+@media (max-width:720px){
+  .flow{grid-template-columns:minmax(0,1fr)}
+  .link{flex-direction:row;justify-content:center;flex-wrap:wrap;padding:6px}
+  .arrow.h{display:none}.arrow.v{display:block;width:24px;height:36px}
+  .linknote{max-width:none}
+}
+.verdict{display:grid;gap:8px;padding:14px 16px;border-left:6px solid var(--ok);background:var(--surface-2)}
+.verdict.no{border-left-color:var(--stamp)}
+.verdict b{font-family:var(--f-display);text-transform:uppercase;font-size:1.2rem}
+.tags{display:flex;gap:8px;flex-wrap:wrap}
+.tag{font-family:var(--f-type);font-size:.8rem;border:1.5px solid currentColor;padding:1px 8px}
+
+/* Modal divertido */
+.overlay{position:fixed;inset:0;background:rgba(10,14,13,.6);display:grid;place-items:center;padding:16px;z-index:50}
+.modal{background:var(--surface);color:var(--ink);border:3px solid var(--ink);max-width:440px;width:100%;padding:24px;display:grid;gap:16px;transform:rotate(-1deg);box-shadow:0 20px 50px -20px rgba(0,0,0,.6)}
+.modal h3{font-size:1.9rem}
+
+/* Pistas y acusación */
+.clues{display:grid;gap:12px}
+.clue{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start;padding:14px;background:var(--surface);border:1px solid var(--line)}
+.clue .n{font-family:var(--f-display);font-weight:900;font-size:2rem;line-height:1;color:var(--muted)}
+.clue p{font-size:.98rem}
+.cleared{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.cleared .chip{border-color:var(--ok);color:var(--ok);background:transparent}
+.board{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.suspect{border:2px solid var(--ink);background:var(--surface);padding:10px;display:flex;gap:8px;align-items:center;text-align:left;min-width:0;font-size:.9rem;font-weight:500;line-height:1.2}
+.suspect svg{width:24px;height:24px;flex:0 0 auto}
+.suspect.cleared-s{opacity:.45;text-decoration:line-through;border-style:dashed}
+.suspect.wrong{border-color:var(--stamp);color:var(--stamp)}
+.suspect.right{background:var(--tape);color:var(--tape-ink)}
+.result{display:grid;gap:10px;padding:16px;border:3px solid var(--stamp);background:var(--surface)}
+.result.win{border-color:var(--ok)}
+.stamp{font-family:var(--f-type);font-size:1.6rem;color:var(--stamp);border:3px solid var(--stamp);padding:2px 12px;transform:rotate(-4deg);justify-self:start;letter-spacing:.06em}
+.result.win .stamp{color:var(--ok);border-color:var(--ok)}
+.score{font-family:var(--f-type);color:var(--muted)}
+
+details.guide{border-top:1px dashed var(--line);padding-top:16px;margin-top:40px}
+details.guide summary{cursor:pointer;font-family:var(--f-type);color:var(--muted)}
+details.guide table{border-collapse:collapse;font-size:.88rem;margin-top:12px;min-width:560px}
+details.guide th,details.guide td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.tablewrap{overflow-x:auto}
+
+@media (prefers-reduced-motion:reduce){.card-inner{transition:none}}
+</style>
+
+</head>
+<body>
+<div class="tape" role="banner"><nav id="tabs" aria-label="Pasos del juego"></nav></div>
+
+<main class="wrap">
+
+<!-- 0 INTRO -->
+<section class="step" id="s0">
+  <div class="clock"><div class="time">13:47</div><div class="day">viernes · agosto · 32 °C</div></div>
+  <h1>Cluedo de integraciones</h1>
+  <div class="story lead">
+    <p>Es viernes a mediodía. Medio equipo está de vacaciones de verano y el resto mira el reloj esperando la hora de salir.</p>
+    <p>De repente, llega un correo marcado como <strong>URGENTE!!</strong></p>
+  </div>
+  <div class="mails">
+    <article class="mail">
+      <header>
+        <div class="subj"><em>URGENTE!!</em> Algo falla con las facturas y nadie sabe qué pasa</div>
+        <div class="muted">De: <b>Dirección Financiera</b> · Para: Equipo SAP · 13:46</div>
+      </header>
+      <div class="body">
+        <p>Me están llamando de todas partes. Unos dicen que las facturas no salen, otros que no entran, y los de archivo dicen que Docuware está vacío.</p>
+        <p>Hoy cerramos el mes. Necesito saber qué pasa <strong>antes de las 15:00</strong>.</p>
+        <span class="flag">PRIORIDAD ALTA</span>
+      </div>
+    </article>
+    <div class="autos">
+      <article class="mail auto">
+        <header><div class="subj">Respuesta automática: Marta · Jefa de proyecto</div></header>
+        <div class="body"><p>Estoy de vacaciones hasta el 1 de septiembre, sin acceso al correo. Para cualquier urgencia, contacta con Luis, el consultor técnico.</p></div>
+      </article>
+      <article class="mail auto">
+        <header><div class="subj">Respuesta automática: Luis · Consultor técnico</div></header>
+        <div class="body"><p>¡De vacaciones! Vuelvo el 1 de septiembre. Para cualquier urgencia, contacta con Marta, la jefa de proyecto.</p></div>
+      </article>
+    </div>
+  </div>
+  <p class="lead">Nadie sabe lo que está pasando. Así que os toca a vosotros: sois el equipo de detectives. Primero conoced a los sospechosos.</p>
+  <div class="next"><button class="btn" data-go="1">Ver a los sospechosos</button></div>
+</section>
+
+<!-- 1 SOSPECHOSOS -->
+<section class="step" id="s1" hidden>
+  <div class="eyebrow">Expediente · Los sospechosos</div>
+  <h2>Los componentes de una integración</h2>
+  <p class="lead">Cada carta es una pieza que participa cuando SAP habla con el exterior. Pulsa una carta para darle la vuelta y leer su ficha.</p>
+  <div class="cards" id="cards"></div>
+  <div class="next"><button class="btn ghost" id="flipAll">Dar la vuelta a todas</button><button class="btn" data-go="2">Elegir el caso</button></div>
+</section>
+
+<!-- 2 EL CASO -->
+<section class="step" id="s2" hidden>
+  <div class="eyebrow">Expediente · El caso</div>
+  <h2>Elige vuestro misterio</h2>
+  <p class="lead">Hay cuatro incidencias abiertas. Elegid una y leed bien el aviso: ahí empiezan las pistas.</p>
+  <div class="pad" id="casePad" role="group" aria-label="Casos"></div>
+  <div id="caseOut"></div>
+  <div class="next"><button class="btn" data-go="3" id="toStep1" disabled>Ir al paso 1</button></div>
+</section>
+
+<!-- 3 PASO 1 -->
+<section class="step" id="s3" hidden>
+  <div class="eyebrow">Paso 1 · El flujo</div>
+  <h2>Para resolver el misterio, elegid el flujo correcto</h2>
+  <div class="casebar" data-casebar></div>
+  <div class="task">
+    <div class="eyebrow">Tarea en equipo</div>
+    <p>Ponedlo en común y dibujadlo en una pizarra o cartulina. El flujo tiene <strong>3 cajitas</strong>: elegid las que creáis oportunas para vuestra integración, dejad espacio entre ellas y unidlas con flechas para indicar la dirección.</p>
+    <div class="chiplist" id="boxChips"></div>
+    <p class="muted">Dos preguntas que ayudan: ¿el documento <strong>sale</strong> de SAP o <strong>entra</strong> en SAP? ¿Es un proceso <strong>estándar</strong> (legal, igual para todas las empresas) o uno <strong>a medida</strong> (hecho para nosotros)?</p>
+  </div>
+  <p>¿Ya lo tenéis dibujado? Pulsad el flujo que habéis elegido para comprobarlo.</p>
+  <div class="pad" id="flowPad" role="group" aria-label="Flujos"></div>
+  <div id="flowOut"></div>
+  <div class="next"><button class="btn" data-go="4">Ir al paso 2</button></div>
+</section>
+
+<!-- 4 PASO 2 -->
+<section class="step" id="s4" hidden>
+  <div class="eyebrow">Paso 2 · Los componentes</div>
+  <h2>Ubicad los sospechosos en el flujo</h2>
+  <div class="casebar" data-casebar></div>
+  <div class="task">
+    <div class="eyebrow">Tarea en equipo</div>
+    <p>Colocad en vuestro dibujo los componentes que creáis necesarios: dentro de cada cajita o encima de las flechas. Tomaos el tiempo que haga falta. Podéis volver a las cartas cuando queráis.</p>
+    <div class="chiplist" id="compChips"></div>
+  </div>
+  <div id="solOut"></div>
+  <div class="next"><button class="btn ghost" id="askSol">Ver la solución</button><button class="btn" data-go="5">Ir al paso 3</button></div>
+</section>
+
+<!-- 5 PASO 3 -->
+<section class="step" id="s5" hidden>
+  <div class="eyebrow">Paso 3 · El culpable</div>
+  <h2>¿Quién ha roto la integración?</h2>
+  <div class="casebar" data-casebar></div>
+  <p class="lead">El equipo de guardia ya ha revisado algunos componentes. Desvelad las pistas una a una y, cuando estéis seguros, señalad al culpable. Cada acusación fallida cuenta.</p>
+  <div class="clues" id="clues"></div>
+  <div class="next" style="justify-content:flex-start"><button class="btn ghost" id="nextClue">Ver siguiente pista</button></div>
+  <h3>Señalad al culpable</h3>
+  <div class="board" id="board"></div>
+  <div id="accuseOut" aria-live="polite"></div>
+</section>
+
+<details class="guide">
+  <summary>Guía para quien dinamiza (soluciones)</summary>
+  <div class="tablewrap"><table id="guideTable"></table></div>
+  <p class="muted" style="margin-top:10px">Las fichas usan iconos ilustrativos. El texto está simplificado a propósito para perfiles funcionales.</p>
+</details>
+</main>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <h3 id="mTitle">¿Seguro que ya lo tenéis?</h3>
+    <p id="mText"></p>
+    <div class="next"><button class="btn ghost" id="mNo">Vale, otra vuelta</button><button class="btn" id="mYes">Que sí, enséñalo</button></div>
+  </div>
+</div>
+
+<script>
+(function(){
+const I = {
+  custom:'<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
+  trust:'<path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/>',
+  rfc:'<path d="M9 2v6M15 2v6M6 8h12v3a6 6 0 0 1-12 0zM12 17v5"/>',
+  servicekey:'<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/>',
+  cc:'<path d="M7 14a4 4 0 0 1-.5-8A6 6 0 0 1 18 5a4.5 4.5 0 0 1-.5 9"/><path d="M12 9v12M9 18l3 3 3-3"/>',
+  destination:'<path d="M12 3v18M12 5h7l2 2.5-2 2.5h-7M12 12H5l-2 2.5L5 17h7"/>',
+  drc:'<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 14l2 2 4-4"/>',
+  peppol:'<circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><circle cx="12" cy="12.5" r="2"/><path d="M12 7v3.5M10.4 13.8l-4 3.8M13.6 13.8l4 3.8"/>',
+  is:'<path d="M4 8h14l-3-3M20 16H6l3 3"/>',
+  keystore:'<rect x="3" y="4" width="18" height="15" rx="1"/><circle cx="12" cy="11.5" r="3.5"/><path d="M12 8v1M12 14v1M7 19v2M17 19v2"/>',
+  rest:'<path d="M8 4c-2 0-3 1-3 3v2c0 1.2-.8 2-2 2 1.2 0 2 .8 2 2v2c0 2 1 3 3 3M16 4c2 0 3 1 3 3v2c0 1.2.8 2 2 2-1.2 0-2 .8-2 2v2c0 2-1 3-3 3"/><path d="M10 11h.01M14 11h.01"/>',
+  sap:'<rect x="4" y="3" width="16" height="7" rx="1"/><rect x="4" y="14" width="16" height="7" rx="1"/><path d="M8 6.5h.01M8 17.5h.01M12 10v4"/>',
+  dw:'<rect x="3" y="4" width="18" height="5"/><path d="M5 9v11h14V9M10 13h4"/>'
+};
+const svg = (k,c='i') => `<svg class="${c}" viewBox="0 0 24 24" aria-hidden="true">${I[k]}</svg>`;
+
+const COMPS = [
+ {id:'custom',name:'Configuración y customizing backend',tech:'SPRO · eDocument · Output',who:'Las reglas que le dicen a SAP qué documentos enviar, a quién y cuándo.',like:'El manual de instrucciones de la oficina: sin él, nadie sabe qué hacer con una factura.',where:'Dentro de SAP (S/4HANA o ECC).',fail:'El documento ni siquiera se genera o se envía con datos incorrectos.'},
+ {id:'trust',name:'Trust Manager',tech:'Transacción STRUST',who:'La lista de certificados SSL (X.509) en los que confía SAP. Un certificado es como un DNI digital de cada sistema.',like:'El portero del edificio con la lista de DNI autorizados. Si un DNI ha caducado, no deja pasar a nadie.',where:'Dentro de SAP.',fail:'SAP no confía en la nube y corta la conexión (error SSL).'},
+ {id:'rfc',name:'RFC / Servicios SOA',tech:'SM59 · SOAMANAGER',who:'Las conexiones que usa SAP para enviar mensajes hacia la nube (DRC o Integration Suite).',like:'La ventanilla de salida de la oficina: por aquí salen las cartas hacia fuera.',where:'Dentro de SAP.',fail:'El mensaje no tiene por dónde salir de SAP.'},
+ {id:'servicekey',name:'Service Binding / Service Key',tech:'BTP Cockpit · Instancias',who:'Las credenciales (usuario, contraseña y dirección) que BTP entrega para que SAP pueda usar un servicio en la nube.',like:'La tarjeta de acceso al parking de la nube. Sin ella, la barrera no se levanta.',where:'Se genera en BTP y se copia en SAP.',fail:'La nube rechaza a SAP por no identificarse (error 401).'},
+ {id:'cc',name:'Cloud Connector',tech:'SAP Cloud Connector',who:'Un programa instalado en nuestra red que abre un túnel seguro entre la nube y nuestros sistemas internos.',like:'El túnel privado entre la oficina y la nube. Si se cierra, nada de fuera llega dentro.',where:'En un servidor de nuestra red interna.',fail:'La nube no puede llegar a SAP (sistema no alcanzable).'},
+ {id:'destination',name:'Destination',tech:'BTP · Connectivity',who:'Una ficha guardada en BTP con la dirección de un sistema y cómo conectarse a él.',like:'La libreta de direcciones: dice a qué puerta llamar y con qué llave.',where:'En la subcuenta de BTP.',fail:'La nube llama a una dirección equivocada o sin permisos.'},
+ {id:'drc',name:'DRC Cloud',tech:'Document and Reporting Compliance',who:'La solución estándar de SAP en la nube para la factura electrónica legal. Convierte la factura al formato oficial y la envía.',like:'La gestoría oficial: conoce las normas de cada país y las aplica igual para todas las empresas.',where:'En SAP BTP (nube).',fail:'Las facturas se quedan en la nube sin enviar ni entregar.'},
+ {id:'peppol',name:'Peppol',tech:'Red Peppol · Access Point',who:'Una red europea para intercambiar facturas electrónicas entre empresas, con reglas comunes.',like:'Correos, pero solo para facturas electrónicas y con buzones verificados.',where:'Fuera de la empresa: una red compartida.',fail:'El cliente o el proveedor no recibe el documento.'},
+ {id:'is',name:'Integration Suite',tech:'Cloud Integration · iFlow',who:'La plataforma de SAP para construir integraciones a medida. Cada integración es un "iFlow": recibe, transforma y reenvía mensajes.',like:'El traductor y mensajero a medida: hace exactamente lo que le hemos programado.',where:'En SAP BTP (nube).',fail:'El mensaje se queda a medio camino y aparece en el monitor con error.'},
+ {id:'keystore',name:'Keystore',tech:'Integration Suite · Monitor',who:'El almacén de certificados de Integration Suite: guarda los DNI digitales de los sistemas con los que habla.',like:'La caja fuerte del mensajero con los DNI de sus contactos. Con un DNI caducado, no entrega.',where:'Dentro de Integration Suite.',fail:'Integration Suite no confía en el destino (error de certificado).'},
+ {id:'rest',name:'Servicio REST',tech:'SAP · SICF',who:'La puerta de entrada de SAP: el servicio por el que SAP recibe documentos desde la nube, tanto de DRC como de Integration Suite.',like:'El buzón de la oficina. Si está cerrado, las cartas rebotan y no entra nada.',where:'Dentro de SAP (se activa en la transacción SICF).',fail:'Nada de lo que viene de fuera puede entrar en SAP (error 404/503).'}
+];
+const C = Object.fromEntries(COMPS.map(c=>[c.id,c]));
+
+const NODES = {sap:{name:'SAP System / Backend',i:'sap'},drc:{name:'DRCC',i:'drc'},peppol:{name:'Peppol',i:'peppol'},is:{name:'Integration Suite',i:'is'},dw:{name:'Docuware',i:'dw'}};
+
+const FLOWS = {
+ A:{label:'SAP → DRCC → Peppol',nodes:['sap','drc','peppol'],dir:'Saliente',kind:'Estándar',
+    comps:[['custom','trust','rfc'],['drc'],['peppol']],links:[['servicekey'],[]],
+    linkNotes:['',"DRC ya trae la conexión a Peppol"],
+    unusedNotes:{cc:'Se usa para que DRC actualice automáticamente los estados en el monitor del cockpit, pero no interviene en la comunicación saliente.'},
+    why:'La factura nace en SAP y sale hacia el cliente. DRC es la solución estándar de SAP: aplica las mismas reglas legales para todas las empresas.'},
+ B:{label:'Peppol → DRCC → SAP',nodes:['peppol','drc','sap'],dir:'Entrante',kind:'Estándar',
+    comps:[['peppol'],['drc'],['rest','custom']],links:[[],['destination','cc']],
+    linkNotes:["DRC ya trae la conexión a Peppol",''],
+    why:'La factura del proveedor llega por Peppol y DRC la empuja hacia SAP. Para entrar en nuestra red usa la Destination y el Cloud Connector, y llama a la puerta de entrada de SAP: el servicio REST.'},
+ C:{label:'SAP → Integration Suite → Docuware',nodes:['sap','is','dw'],dir:'Saliente',kind:'A medida',
+    comps:[['custom','trust','rfc'],['is','keystore'],[]],links:[['servicekey'],[]],
+    linkNotes:['',''], nodeNotes:['','','Su API la gestiona el equipo de Docuware'],
+    why:'SAP envía el documento, Integration Suite lo prepara con un iFlow hecho para nosotros y lo deja en Docuware. Docuware no es un estándar legal: es un desarrollo a medida.'},
+ D:{label:'Docuware → Integration Suite → SAP',nodes:['dw','is','sap'],dir:'Entrante',kind:'A medida',
+    comps:[[],['is','keystore'],['rest','custom']],links:[[],['cc']],
+    linkNotes:['','La dirección del destino va dentro del propio iFlow'], nodeNotes:['Envía los documentos validados','',''],
+    why:'Docuware envía los documentos validados, Integration Suite los transforma y los lleva a SAP a través del Cloud Connector, entrando por el servicio REST, la misma puerta que usa DRC.'}
+};
+
+const CASES = [
+ {id:1,title:'Las facturas no salen',flow:'A',culprit:'trust',
+  mail:{from:'Administración de Clientes',time:'13:52',subj:'URGENTE!! Ningún cliente recibe sus facturas',
+    body:'Desde esta mañana no sale ni una factura electrónica, de ninguna sociedad. Un cliente grande dice que si no la recibe hoy, no paga hasta octubre.'},
+  log:'Monitor eDocument (SAP) · Todas las sociedades · Estado: Error de envío\nMensaje: SSL handshake failed\nDetalle: SSSLERR_PEER_CERT_EXPIRED (certificado X.509 caducado)',
+  clues:[
+   {t:'Se revisa el customizing de facturación electrónica en SAP. Las facturas se crean bien y generan su documento electrónico. Y fallan todas las sociedades por igual: si fuera un problema de configuración, no caerían todas a la vez.',ok:['custom']},
+   {t:'En BTP, la instancia de DRC está activa y SAP no publica ninguna incidencia del servicio. La red Peppol está operativa y la Service Key no ha cambiado. Pero desde ayer a DRC no ha llegado ni un solo mensaje: el problema está antes de llegar a la nube.',ok:['drc','peppol','servicekey']},
+   {t:'El error ocurre dentro de SAP, justo al intentar conectar con la nube. La conexión está bien configurada, pero alguien "no se fía" de alguien. En el registro de tareas de Sistemas aparece: "agosto del año pasado: importado certificado SSL (X.509) de BTP, validez 12 meses".',ok:['rfc']}
+  ],
+  solve:'El certificado SSL (X.509) de BTP guardado en el Trust Manager caducó ayer. SAP ya no reconoce la identidad de la nube y corta la conversación antes de empezar. Como esa conexión es la misma para todas las sociedades, se para toda la integración con DRC a la vez.',
+  fix:'Basis importa el certificado nuevo en STRUST y se reenvían las facturas desde el monitor de eDocument.'},
+ {id:2,title:'Las facturas de proveedores no llegan',flow:'B',culprit:'cc',
+  mail:{from:'Cuentas a Pagar',time:'13:55',subj:'URGENTE!! Facturas de proveedores perdidas',
+    body:'Tres proveedores nos dicen que enviaron sus facturas por Peppol el martes. En SAP no aparece ninguna y hoy cerramos el mes.'},
+  log:'DRC Cloud · Documento recibido: OK\nEntrega al sistema destino: ERROR\nUnable to reach on-premise system (503 Service Unavailable)',
+  clues:[
+   {t:'Los proveedores enseñan el justificante de envío de Peppol. En DRC Cloud las facturas aparecen como recibidas.',ok:['peppol','drc']},
+   {t:'Desde dentro de nuestra red, el servicio REST de SAP que recibe las facturas responde bien a una prueba. El customizing no se ha tocado en meses.',ok:['rest','custom']},
+   {t:'La Destination de BTP tiene la dirección correcta, pero el botón "Comprobar conexión" da error. Dato curioso: Sistemas reinició varios servidores internos el jueves por la noche.',ok:['destination']}
+  ],
+  solve:'El Cloud Connector es el túnel entre la nube y nuestra red. Tras el reinicio del jueves, su servicio no volvió a arrancar, así que DRC no puede entregar nada a SAP.',
+  fix:'Sistemas arranca el Cloud Connector, se comprueba que está conectado a la subcuenta de BTP y se reprocesan las facturas desde DRC.'},
+ {id:3,title:'Docuware no recibe los documentos',flow:'C',culprit:'keystore',
+  mail:{from:'Archivo y Auditoría',time:'13:58',subj:'URGENTE!! Docuware vacío desde el lunes',
+    body:'Los documentos que enviamos desde SAP no aparecen en Docuware desde el lunes. El martes viene auditoría y tiene que estar todo archivado.'},
+  log:'Integration Suite · Monitor de mensajes\nEstado: FAILED · Receptor: Docuware\nPKIX path validation failed: certificate expired',
+  clues:[
+   {t:'En SAP el envío sale con éxito y la conexión segura con la nube funciona. El mensaje llega a Integration Suite: se ve en el monitor.',ok:['custom','rfc','servicekey','trust']},
+   {t:'Docuware funciona: los usuarios entran sin problema y su API responde a las pruebas del equipo de Docuware. El problema no está en su casa.',ok:[]},
+   {t:'El fallo ocurre dentro de Integration Suite, justo al llamar a Docuware, y es un error de certificado. El iFlow no ha cambiado. Por cierto, Docuware renovó su certificado la semana pasada. ¿Alguien se lo dijo a Integration Suite?',ok:['is']}
+  ],
+  solve:'Docuware estrenó certificado, pero en el Keystore de Integration Suite sigue guardado el antiguo, que ya ha caducado. Integration Suite no reconoce a Docuware y se niega a entregarle nada.',
+  fix:'Se importa el certificado nuevo de Docuware en el Keystore y se reprocesan los mensajes fallidos.'},
+ {id:4,title:'SAP no recibe nada de Docuware',flow:'D',culprit:'rest',
+  mail:{from:'Cuentas a Pagar',time:'14:03',subj:'URGENTE!! 200 facturas atascadas en Docuware',
+    body:'Las facturas que validamos en Docuware no llegan a SAP. Ya hay más de 200 esperando y nadie puede contabilizarlas.'},
+  log:'Integration Suite · Monitor de mensajes\nEstado: FAILED · Origen: Docuware · Receptor: SAP (vía Cloud Connector)\nHTTP 403 Forbidden: Service cannot be reached\n(No se puede alcanzar el servicio en el sistema destino)',
+  clues:[
+   {t:'Docuware envía los documentos y Integration Suite los recibe: aparecen en el monitor. El iFlow no ha cambiado en meses y los certificados del Keystore son válidos hasta 2027.',ok:['is','keystore']},
+   {t:'El error dice "no se puede alcanzar", y parece culpa del Cloud Connector. Pero el Cloud Connector está conectado (en verde) y su registro muestra que la llamada sí llegó a SAP y que fue SAP quien respondió con el error. Si el túnel estuviera caído, el mensaje sería otro (como en el caso 2).',ok:['cc']},
+   {t:'Entonces es SAP quien no abre la puerta. El customizing está bien. Basis actualizó SAP el miércoles, y en su lista de tareas hay una línea sin tachar: "reactivar servicios en SICF".',ok:['custom']}
+  ],
+  solve:'Tras la actualización de SAP del miércoles, el servicio REST de entrada quedó desactivado en SICF. El mensaje viaja bien por el Cloud Connector y llega hasta SAP, pero SAP responde "Service cannot be reached": la puerta está cerrada. El error engaña porque parece un problema de conexión, y no lo es.',
+  fix:'Basis activa el servicio REST en SICF y se reprocesan los mensajes fallidos desde Integration Suite. Ojo: si DRC usa la misma puerta, las facturas de proveedores también estarían paradas.'}
+];
+
+const MODAL_TXT = [
+ 'Dale otra vuelta, no seas flojo. Mirad otra vez las cartas: ¿quién guarda los certificados? ¿Quién abre el túnel?',
+ 'El consultor técnico está en la playa y no os va a salvar. Cinco minutos más de cartulina no matan a nadie.',
+ 'Sherlock nunca miraba la solución al principio. ¿Seguro que habéis colocado todas las piezas?',
+ 'Si lo veis ahora, ya no hay vuelta atrás. ¿Lo tenéis o solo tenéis hambre?'
+];
+
+const STEPS = ['Inicio','Sospechosos','El caso','Paso 1','Paso 2','Paso 3'];
+let S = {step:0, caseId:null, flowPick:null, solShown:false, clues:0, guesses:[], solved:false, modalN:0, flipped:[]};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const cur = () => CASES.find(c=>c.id===S.caseId);
+
+/* Tabs */
+function renderTabs(){
+  $('#tabs').innerHTML = STEPS.map((s,i)=>`<button data-go="${i}" ${i===S.step?'aria-current="step"':''}><span>${i}</span>${s}</button>`).join('');
+}
+function go(n){
+  S.step = n;
+  document.querySelectorAll('section.step').forEach((el,i)=>el.hidden = i!==n);
+  renderTabs(); renderCasebars();
+  if(n===3) renderStep1(); if(n===4) renderStep2(); if(n===5) renderStep3();
+  window.scrollTo(0,0);
+}
+document.addEventListener('click', e=>{
+  const g = e.target.closest('[data-go]'); if(g){ go(+g.dataset.go); }
+});
+
+/* Cartas */
+function renderCards(){
+  $('#cards').innerHTML = COMPS.map((c,i)=>`
+  <button class="card" aria-pressed="${S.flipped.includes(c.id)}" data-card="${c.id}" aria-label="${esc(c.name)}: dar la vuelta">
+    <div class="card-inner">
+      <div class="face front">
+        <span class="num">Sospechoso nº ${String(i+1).padStart(2,'0')}</span>
+        ${svg(c.id,'i ico')}
+        <span class="nm">${esc(c.name)}</span>
+        <span class="hint">Pulsa para ver su ficha</span>
+      </div>
+      <div class="face back">
+        <div class="photo"><div class="ph">${svg(c.id)}</div><div><div class="nm">${esc(c.name)}</div><div class="tech">${esc(c.tech)}</div></div></div>
+        <dl>
+          <div><dt>Quién es</dt><dd>${esc(c.who)}</dd></div>
+          <div><dt>Dicho fácil</dt><dd>${esc(c.like)}</dd></div>
+          <div><dt>Dónde vive</dt><dd>${esc(c.where)}</dd></div>
+          <div><dt>Si falla</dt><dd>${esc(c.fail)}</dd></div>
+        </dl>
+      </div>
+    </div>
+  </button>`).join('');
+}
+$('#cards').addEventListener('click', e=>{
+  const b = e.target.closest('[data-card]'); if(!b) return;
+  const id=b.dataset.card, on = b.getAttribute('aria-pressed')!=='true';
+  b.setAttribute('aria-pressed', on);
+  S.flipped = on ? [...S.flipped,id] : S.flipped.filter(x=>x!==id);
+});
+$('#flipAll').addEventListener('click', ()=>{
+  const all = S.flipped.length < COMPS.length;
+  S.flipped = all ? COMPS.map(c=>c.id) : [];
+  document.querySelectorAll('[data-card]').forEach(b=>b.setAttribute('aria-pressed', all));
+  $('#flipAll').textContent = all ? 'Volver a taparlas' : 'Dar la vuelta a todas';
+});
+
+/* Casos */
+function renderCasePad(){
+  $('#casePad').innerHTML = CASES.map(c=>`<button aria-pressed="${S.caseId===c.id}" data-case="${c.id}"><span class="k">Caso ${c.id}</span><span class="t">${esc(c.title)}</span></button>`).join('');
+  const c = cur();
+  $('#toStep1').disabled = !c;
+  if(!c){ $('#caseOut').innerHTML=''; return; }
+  $('#caseOut').innerHTML = `
+  <div class="panel">
+    <article class="mail">
+      <header><div class="subj"><em>${esc(c.mail.subj.split(' ')[0])}</em> ${esc(c.mail.subj.split(' ').slice(1).join(' '))}</div>
+      <div class="muted">De: <b>${esc(c.mail.from)}</b> · ${c.mail.time}</div></header>
+      <div class="body"><p>${esc(c.mail.body)}</p></div>
+    </article>
+    <div><div class="eyebrow" style="margin-bottom:6px">Lo único que se ve en el sistema</div><div class="log">${esc(c.log)}</div></div>
+  </div>`;
+}
+$('#casePad').addEventListener('click', e=>{
+  const b=e.target.closest('[data-case]'); if(!b) return;
+  const id=+b.dataset.case;
+  if(id!==S.caseId){ S.caseId=id; S.flowPick=null; S.solShown=false; S.clues=0; S.guesses=[]; S.solved=false; }
+  renderCasePad();
+});
+function renderCasebars(){
+  const c=cur();
+  document.querySelectorAll('[data-casebar]').forEach(el=>{
+    el.innerHTML = c ? `<span class="eyebrow">Vuestro caso</span><b>Caso ${c.id} · ${esc(c.title)}</b>`
+      : `<span>Todavía no habéis elegido caso.</span><button class="btn ghost" data-go="2" style="padding:6px 12px;font-size:1rem">Elegir caso</button>`;
+  });
+}
+
+/* Flujo */
+function flowHTML(fid, withComps){
+  const f=FLOWS[fid];
+  const chips = ids => `<div class="chiplist">${ids.map(id=>`<span class="chip">${svg(id)}${esc(C[id].name)}</span>`).join('')}</div>`;
+  const node = (n,k) => `<div class="node"><div class="hd">${svg(NODES[n].i)}<b>${esc(NODES[n].name)}</b></div>${withComps?chips(f.comps[k]):''}${withComps && f.nodeNotes && f.nodeNotes[k] ? `<span class="linknote" style="text-align:left;max-width:none">${esc(f.nodeNotes[k])}</span>`:''}</div>`;
+  const link = k => `<div class="link">
+      <svg class="i arrow h" viewBox="0 0 120 24" preserveAspectRatio="none" aria-hidden="true"><path d="M4 12h108M100 4l12 8-12 8" stroke-width="2.5"/></svg>
+      <svg class="i arrow v" viewBox="0 0 24 36" aria-hidden="true"><path d="M12 2v30M4 24l8 8 8-8" stroke-width="2.5"/></svg>
+      ${withComps && f.links[k].length ? f.links[k].map(id=>`<span class="chip">${svg(id)}${esc(C[id].name)}</span>`).join('') : ''}
+      ${withComps && f.linkNotes[k] ? `<span class="linknote">${esc(f.linkNotes[k])}</span>`:''}
+    </div>`;
+  return `<div class="flowbox"><div class="flow${withComps?'':' empty'}" aria-label="${esc(f.label)}">${node(f.nodes[0],0)}${link(0)}${node(f.nodes[1],1)}${link(1)}${node(f.nodes[2],2)}</div></div>`;
+}
+function renderStep1(){
+  $('#boxChips').innerHTML = Object.values(NODES).map(n=>`<span class="chip big">${svg(n.i)}${esc(n.name)}</span>`).join('');
+  $('#flowPad').innerHTML = Object.entries(FLOWS).map(([k,f],i)=>`<button aria-pressed="${S.flowPick===k}" data-flow="${k}"><span class="k">Opción ${i+1}</span><span class="t">${esc(f.label)}</span></button>`).join('');
+  const out=$('#flowOut');
+  if(!S.flowPick){ out.innerHTML=''; return; }
+  const f=FLOWS[S.flowPick], c=cur();
+  const match = c && c.flow===S.flowPick;
+  const verdict = !c ? `<div class="verdict"><b>${esc(f.dir)} · ${esc(f.kind)}</b><p>${esc(f.why)}</p></div>`
+    : match ? `<div class="verdict"><b>¡Bien visto! Este es el flujo de vuestro caso</b><div class="tags"><span class="tag">${esc(f.dir)}</span><span class="tag">${esc(f.kind)}</span></div><p>${esc(f.why)}</p></div>`
+    : `<div class="verdict no"><b>Este no es el flujo de vuestro caso</b><div class="tags"><span class="tag">${esc(f.dir)}</span><span class="tag">${esc(f.kind)}</span></div><p>${esc(f.why)}</p><p>Volved a leer el aviso: ¿el documento sale de SAP o entra? ¿Interviene Docuware o es la factura electrónica legal?</p></div>`;
+  out.innerHTML = `<div class="panel">${flowHTML(S.flowPick,false)}${verdict}</div>`;
+}
+$('#flowPad').addEventListener('click', e=>{
+  const b=e.target.closest('[data-flow]'); if(!b) return; S.flowPick=b.dataset.flow; renderStep1();
+});
+
+/* Paso 2 */
+function renderStep2(){
+  $('#compChips').innerHTML = COMPS.map(c=>`<span class="chip">${svg(c.id)}${esc(c.name)}</span>`).join('');
+  const c=cur();
+  $('#askSol').disabled = !c;
+  if(!c || !S.solShown){ $('#solOut').innerHTML=''; $('#askSol').hidden=false; return; }
+  $('#askSol').hidden=true;
+  const f=FLOWS[c.flow];
+  const unused = COMPS.filter(x=>!f.comps.flat().includes(x.id) && !f.links.flat().includes(x.id));
+  $('#solOut').innerHTML = `<div class="panel">
+    <div class="eyebrow">Solución · ${esc(f.label)}</div>
+    ${flowHTML(c.flow,true)}
+    <div class="verdict"><b>No os preocupéis si no coincide exactamente</b><p>La idea es que os familiaricéis con la solución y con los componentes que intervienen. En los proyectos reales cada empresa lo monta con pequeñas diferencias.</p></div>
+    <p class="muted">Sospechosos que no participan en este flujo: ${unused.map(x=>esc(x.name)).join(', ')}.</p>
+    ${Object.entries(f.unusedNotes||{}).map(([id,t])=>`<div class="verdict"><b>Ojo con ${esc(C[id].name)}</b><p>${esc(t)}</p></div>`).join('')}
+  </div>`;
+}
+$('#askSol').addEventListener('click', ()=>{
+  $('#mText').textContent = MODAL_TXT[S.modalN % MODAL_TXT.length];
+  S.modalN++;
+  $('#overlay').hidden=false; $('#mNo').focus();
+});
+$('#mNo').addEventListener('click', ()=>{ $('#overlay').hidden=true; $('#askSol').focus(); });
+$('#mYes').addEventListener('click', ()=>{ $('#overlay').hidden=true; S.solShown=true; renderStep2(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && !$('#overlay').hidden){ $('#overlay').hidden=true; } });
+
+/* Paso 3 */
+function clearedBy(c){ const m={}; c.clues.forEach((cl,i)=>cl.ok.forEach(id=>m[id]=i)); return m; }
+function renderStep3(){
+  const c=cur();
+  if(!c){ $('#clues').innerHTML=''; $('#board').innerHTML=''; $('#accuseOut').innerHTML=''; $('#nextClue').hidden=true; return; }
+  const shown = c.clues.slice(0,S.clues);
+  $('#clues').innerHTML = shown.length ? shown.map((cl,i)=>`<div class="clue"><div class="n">${i+1}</div><div><p>${esc(cl.t)}</p>
+      ${cl.ok.length?`<div class="cleared">${cl.ok.map(id=>`<span class="chip">✓ ${esc(C[id].name)}: revisado</span>`).join('')}</div>`:''}</div></div>`).join('')
+    : `<p class="muted">Aún no habéis visto ninguna pista. Antes de pedirla, mirad el mensaje de error de vuestro caso: ya dice bastante.</p><div class="log">${esc(c.log)}</div>`;
+  $('#nextClue').hidden = S.clues>=c.clues.length;
+  $('#nextClue').textContent = S.clues===0 ? 'Ver primera pista' : 'Ver siguiente pista';
+  const cb=clearedBy(c), visibleCleared = Object.keys(cb).filter(id=>cb[id]<S.clues);
+  $('#board').innerHTML = COMPS.map(x=>{
+    let cls='suspect';
+    if(S.solved && x.id===c.culprit) cls+=' right';
+    else if(S.guesses.includes(x.id)) cls+=' wrong';
+    else if(visibleCleared.includes(x.id)) cls+=' cleared-s';
+    return `<button class="${cls}" data-accuse="${x.id}" ${S.solved?'disabled':''}>${svg(x.id)}<span>${esc(x.name)}</span></button>`;
+  }).join('');
+  renderAccuse();
+}
+function renderAccuse(){
+  const c=cur(), out=$('#accuseOut');
+  if(S.solved){
+    const fails=S.guesses.length;
+    const rank = fails===0 ? 'Nivel Sherlock: a la primera.' : fails===1 ? 'Nivel Poirot: un tropiezo y al grano.' : fails<=3 ? 'Nivel Colombo: despistados, pero llegasteis.' : 'Nivel inspector Clouseau: lo importante es que se arregló.';
+    out.innerHTML = `<div class="result win"><span class="stamp">CASO RESUELTO</span>
+      <h3>El culpable: ${esc(C[c.culprit].name)}</h3>
+      <p>${esc(c.solve)}</p><p><strong>Cómo se arregla:</strong> ${esc(c.fix)}</p>
+      <p class="score">Acusaciones fallidas: ${fails} · Pistas usadas: ${S.clues} de ${c.clues.length} · ${rank}</p>
+      <div class="next" style="justify-content:flex-start"><button class="btn" id="otherCase">Resolver otro caso</button></div></div>`;
+    $('#otherCase').onclick = ()=>{ S.caseId=null; S.flowPick=null; S.solShown=false; S.clues=0; S.guesses=[]; S.solved=false; renderCasePad(); go(2); };
+    return;
+  }
+  const last=S.guesses[S.guesses.length-1];
+  if(!last){ out.innerHTML=''; return; }
+  const f=FLOWS[c.flow], inFlow=[...f.comps.flat(),...f.links.flat()].includes(last), cb=clearedBy(c);
+  let why;
+  if(!inFlow && f.unusedNotes && f.unusedNotes[last]) why=`Tiene coartada: ${esc(f.unusedNotes[last])}`;
+  else if(!inFlow) why=`Tiene coartada: ni siquiera participa en el flujo ${esc(f.label)}. Revisad vuestro dibujo del paso 2.`;
+  else if(cb[last]!==undefined) why=`Tiene coartada: ${cb[last]<S.clues ? `la pista ${cb[last]+1} dice que ya se ha revisado y está bien.` : 'hay una pista que todavía no habéis visto y lo deja libre.'}`;
+  else why='Tiene coartada.';
+  out.innerHTML = `<div class="result"><span class="stamp">INOCENTE</span><p><strong>${esc(C[last].name)}</strong>. ${why}</p></div>`;
+}
+$('#nextClue').addEventListener('click', ()=>{ S.clues++; renderStep3(); });
+$('#board').addEventListener('click', e=>{
+  const b=e.target.closest('[data-accuse]'); if(!b||S.solved) return;
+  const id=b.dataset.accuse, c=cur();
+  if(id===c.culprit) S.solved=true; else if(!S.guesses.includes(id)) S.guesses.push(id); else return;
+  renderStep3();
+});
+
+/* Guía */
+$('#guideTable').innerHTML = `<thead><tr><th>Caso</th><th>Flujo</th><th>Tipo</th><th>Culpable</th></tr></thead><tbody>${
+  CASES.map(c=>`<tr><td>${c.id}. ${esc(c.title)}</td><td>${esc(FLOWS[c.flow].label)}</td><td>${esc(FLOWS[c.flow].dir)} · ${esc(FLOWS[c.flow].kind)}</td><td>${esc(C[c.culprit].name)}</td></tr>`).join('')}</tbody>`;
+
+/* Arranque con recarga en caliente */
+function start(data){
+  if(data && data.S) S = Object.assign(S, data.S);
+  renderCards(); renderCasePad(); go(S.step||0);
+}
+window.claude?.hot?.snapshot?.(()=>({S}));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
+
+</body>
+</html>

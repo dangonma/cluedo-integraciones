@@ -175,11 +175,6 @@ svg.i{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke
 .result.win .stamp{color:var(--ok);border-color:var(--ok)}
 .score{font-family:var(--f-type);color:var(--muted)}
 
-details.guide{border-top:1px dashed var(--line);padding-top:16px;margin-top:40px}
-details.guide summary{cursor:pointer;font-family:var(--f-type);color:var(--muted)}
-details.guide table{border-collapse:collapse;font-size:.88rem;margin-top:12px;min-width:560px}
-details.guide th,details.guide td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
-.tablewrap{overflow-x:auto}
 
 @media (prefers-reduced-motion:reduce){.card-inner{transition:none}}
 </style>
@@ -212,12 +207,12 @@ details.guide th,details.guide td{border:1px solid var(--line);padding:6px 8px;t
     </article>
     <div class="autos">
       <article class="mail auto">
-        <header><div class="subj">Respuesta automática: Marta · Jefa de proyecto</div></header>
-        <div class="body"><p>Estoy de vacaciones hasta el 1 de septiembre, sin acceso al correo. Para cualquier urgencia, contacta con Luis, el consultor técnico.</p></div>
+        <header><div class="subj">Respuesta automática: Esther · Jefa de proyecto</div></header>
+        <div class="body"><p>Estoy de vacaciones hasta el 1 de septiembre, sin acceso al correo. Para cualquier urgencia, contacta con Juan, el consultor técnico.</p></div>
       </article>
       <article class="mail auto">
-        <header><div class="subj">Respuesta automática: Luis · Consultor técnico</div></header>
-        <div class="body"><p>¡De vacaciones! Vuelvo el 1 de septiembre. Para cualquier urgencia, contacta con Marta, la jefa de proyecto.</p></div>
+        <header><div class="subj">Respuesta automática: Juan · Consultor técnico</div></header>
+        <div class="body"><p>¡De vacaciones! Vuelvo el 1 de septiembre. Para cualquier urgencia, contacta con Esther, la jefa de proyecto.</p></div>
       </article>
     </div>
   </div>
@@ -288,11 +283,6 @@ details.guide th,details.guide td{border:1px solid var(--line);padding:6px 8px;t
   <div id="accuseOut" aria-live="polite"></div>
 </section>
 
-<details class="guide">
-  <summary>Guía para quien dinamiza (soluciones)</summary>
-  <div class="tablewrap"><table id="guideTable"></table></div>
-  <p class="muted" style="margin-top:10px">Las fichas usan iconos ilustrativos. El texto está simplificado a propósito para perfiles funcionales.</p>
-</details>
 </main>
 
 <div class="overlay" id="overlay" hidden>
@@ -607,9 +597,6 @@ $('#board').addEventListener('click', e=>{
   renderStep3();
 });
 
-/* Guía */
-$('#guideTable').innerHTML = `<thead><tr><th>Caso</th><th>Flujo</th><th>Tipo</th><th>Culpable</th></tr></thead><tbody>${
-  CASES.map(c=>`<tr><td>${c.id}. ${esc(c.title)}</td><td>${esc(FLOWS[c.flow].label)}</td><td>${esc(FLOWS[c.flow].dir)} · ${esc(FLOWS[c.flow].kind)}</td><td>${esc(C[c.culprit].name)}</td></tr>`).join('')}</tbody>`;
 
 /* Arranque con recarga en caliente */
 function start(data){
